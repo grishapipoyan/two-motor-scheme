@@ -1,0 +1,603 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<style>*{box-sizing:border-box}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
+<title>Два двигателя 36 В</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Condensed:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500&display=swap">
+<style>
+/* Layout: navy title strip, simulator controls, one wide wiring sheet (scrolls sideways on phones), reference panels below. Deliberately single light theme, like a printed sheet. */
+:root {
+  color-scheme: light;
+  --paper: #f5f7fa;
+  --panel: #e9eff6;
+  --panel-line: #c5d3e2;
+  --ink: #17212c;
+  --muted: #566475;
+  --navy: #15345a;
+  --accent: #d1342b;
+  --ok: #23924a;
+  --warn: #c2410c;
+  --f-label: "IBM Plex Sans Condensed", "Arial Narrow", "Roboto Condensed", Arial, sans-serif;
+  --f-mono: "IBM Plex Mono", ui-monospace, Menlo, Consolas, monospace;
+}
+html, body { background: var(--paper); color: var(--ink); }
+body { font-family: var(--f-label); font-size: 15px; line-height: 1.45; }
+.wrap { max-width: 1640px; margin: 0 auto; padding-inline: 16px; padding-block: 16px 40px; display: grid; gap: 14px; }
+header.title { background: var(--navy); color: #fff; border-radius: 10px; padding: 14px 20px; display: grid; gap: 2px; }
+header.title h1 { margin: 0; font-size: clamp(19px, 2.4vw, 28px); font-weight: 700; text-wrap: balance; letter-spacing: .1px; }
+header.title p { margin: 0; color: #cfdced; font-size: clamp(13px, 1.4vw, 16px); }
+.redline { color: var(--accent); font-weight: 700; text-align: center; font-size: 16px; margin: 0; }
+
+.sim { background: #fff; border: 1px solid var(--panel-line); border-radius: 10px; padding: 12px 14px; display: grid; gap: 10px; }
+.groups { display: flex; flex-wrap: wrap; gap: 10px 18px; align-items: flex-start; }
+.grp { display: grid; gap: 6px; min-width: 0; }
+.grp h3 { margin: 0; font-size: 12px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); font-weight: 600; }
+.btns { display: flex; flex-wrap: wrap; gap: 6px; }
+button { font-family: var(--f-label); font-size: 14px; font-weight: 600; border-radius: 7px; border: 1px solid #b9c6d4; background: #f3f6f9; color: var(--ink); padding: 6px 11px; cursor: pointer; }
+button:hover { background: #e6edf4; }
+button:focus-visible { outline: 3px solid #5b8fd6; outline-offset: 1px; }
+button.start { background: #e3f4e8; border-color: #8fcaa2; }
+button.stop { background: #fbe5e3; border-color: #e3a29c; }
+button.tog[aria-pressed="true"] { background: #fff4e0; border-color: #e0a447; }
+.status { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.chip { font-size: 13px; font-weight: 600; border-radius: 99px; padding: 3px 10px; border: 1px solid; }
+.chip.on { color: #135e2f; background: #e2f4e8; border-color: #9fd3b0; }
+.chip.off { color: #5b6673; background: #eef1f4; border-color: #cbd3dc; }
+.chip.bad { color: #9b1c14; background: #fbe4e2; border-color: #e8a59f; }
+.msg { margin: 0; font-size: 15px; min-height: 1.45em; }
+.msg b { color: var(--navy); }
+.lighting { display: flex; gap: 6px; align-items: center; font-size: 13px; color: var(--muted); }
+
+.sheet { background: #fff; border: 1px solid var(--panel-line); border-radius: 10px; overflow-x: auto; }
+.sheet svg { display: block; width: 100%; min-width: 1060px; height: auto; }
+.hint { margin: 0; font-size: 13px; color: var(--muted); }
+
+.info { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 14px; }
+.card { background: #fff; border: 1px solid var(--panel-line); border-radius: 10px; padding: 14px 16px; min-width: 0; }
+.card h2 { margin: 0 0 8px; font-size: 18px; color: var(--navy); }
+.card ol, .card ul { margin: 0; padding-left: 20px; display: grid; gap: 4px; }
+.card.warn { background: #fff6f4; border-color: #efb8ae; }
+.card.warn h2 { color: #a3261c; }
+table { border-collapse: collapse; width: 100%; font-size: 14px; }
+td, th { text-align: left; padding: 4px 6px; border-bottom: 1px solid #e3e9ef; vertical-align: top; }
+th { font-size: 12px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); font-weight: 600; }
+td.code { font-family: var(--f-mono); font-size: 13px; white-space: nowrap; color: var(--navy); }
+.pass { color: var(--ok); font-weight: 700; }
+.fail { color: var(--accent); font-weight: 700; }
+.tag { font-size: 11px; font-weight: 700; color: var(--warn); border: 1px solid #f0b48a; background: #fff3e8; border-radius: 4px; padding: 0 4px; margin-left: 4px; }
+.tbl-scroll { overflow-x: auto; }
+
+/* SVG */
+svg text { font-family: var(--f-label); fill: var(--ink); }
+svg .t-name { font-weight: 700; font-size: 15px; }
+svg .t-sub { font-size: 12px; fill: #3d4a59; }
+svg .t-small { font-size: 10.5px; fill: #3d4a59; }
+svg .t-term { font-family: var(--f-mono); font-size: 9.5px; fill: #47525f; }
+svg .t-panel { font-weight: 700; font-size: 19px; fill: var(--navy); }
+svg .w { fill: none; stroke-width: 3.2; stroke-linejoin: round; stroke-linecap: round; transition: opacity .25s; }
+svg.dimming .w.dead { opacity: .25; }
+svg .w.live.flow { stroke-dasharray: 2 9; stroke: rgba(255,255,255,.85); stroke-width: 1.6; animation: flow 0.9s linear infinite; }
+svg .clickable { cursor: pointer; }
+svg .clickable:hover > .hov { stroke: #5b8fd6; stroke-width: 3; }
+@keyframes flow { to { stroke-dashoffset: -22; } }
+.spin { transform-box: fill-box; transform-origin: center; animation: spin .6s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { svg .w.live.flow, .spin { animation: none; } }
+</style>
+
+<div class="wrap">
+  <header class="title">
+    <h1>Схема управления двумя двигателями 3~36 В от одного трансформатора 380/36 В</h1>
+    <p>Один вводной автомат, реле контроля фаз, главный контактор, защита вторичной цепи, два кнопочных поста, взаимная блокировка</p>
+  </header>
+  <p class="redline">При работе одного двигателя второй включиться не может</p>
+
+  <section class="sim" aria-label="Проверка схемы в работе">
+    <div class="groups">
+      <div class="grp"><h3>Питание 380 В</h3><div class="btns">
+        <button class="tog" id="b-qf1" data-act="qf1">QF1</button>
+        <button class="tog" id="b-ph" data-act="phases">Авария фаз</button>
+        <button class="tog stop" id="b-sb0" data-act="sb0">SB0 аварийный стоп</button>
+      </div></div>
+      <div class="grp"><h3>Пост SB1 · M1</h3><div class="btns">
+        <button class="start" id="b-s1" data-act="start1">ПУСК</button>
+        <button class="stop" id="b-p1" data-act="stop1">СТОП</button>
+      </div></div>
+      <div class="grp"><h3>Пост SB2 · M2</h3><div class="btns">
+        <button class="start" id="b-s2" data-act="start2">ПУСК</button>
+        <button class="stop" id="b-p2" data-act="stop2">СТОП</button>
+      </div></div>
+      <div class="grp"><h3>Проверка блокировки</h3><div class="btns">
+        <button class="start" id="b-both" data-act="both">ПУСК1 + ПУСК2 одновременно</button>
+      </div></div>
+      <div class="grp"><h3>Защиты</h3><div class="btns">
+        <button class="tog" id="b-fr1" data-act="fr1">FR1 сработал</button>
+        <button class="tog" id="b-fr2" data-act="fr2">FR2 сработал</button>
+        <button class="tog" id="b-qf2" data-act="qf2">QF2</button>
+        <button class="tog" id="b-qf0" data-act="qf0">QF0</button>
+        <button class="tog" id="b-qf3" data-act="qf3">QF3</button>
+      </div></div>
+      <div class="grp"><h3>Схема</h3><div class="btns">
+        <button id="b-reset" data-act="reset">Исходное состояние</button>
+      </div></div>
+    </div>
+    <div class="status" id="status"></div>
+    <p class="msg" id="msg" aria-live="polite"></p>
+    <label class="lighting"><input type="checkbox" id="lit" checked> Подсвечивать провода под напряжением</label>
+  </section>
+
+  <div class="sheet" id="sheet"></div>
+  <p class="hint">Кнопки постов, SB0, автоматы и защиты на схеме тоже нажимаются. На телефоне лист прокручивается вбок.</p>
+
+  <section class="info">
+    <div class="card" style="grid-column: 1 / -1">
+      <h2>Как пользоваться: порядок для оператора</h2>
+      <div class="info" style="grid-template-columns: repeat(auto-fit, minmax(260px, 1fr))">
+        <div><b>Включение</b><ol>
+          <li>Проверить, что красный грибок SB0 не нажат. Если вдавлен, повернуть по стрелкам, он выскочит.</li>
+          <li>В шкафу включить QF0, QF2, QF3 (рычаги вверх). Обычно они всегда включены.</li>
+          <li>Последним включить вводной QF1.</li>
+          <li>На KVR горят зелёные лампы, KM0 щёлкнул. Схема готова, двигатели стоят.</li>
+        </ol></div>
+        <div><b>Работа</b><ol>
+          <li>Двигатель 1: нажать и отпустить зелёную ПУСК на посту SB1. M1 работает сам.</li>
+          <li>Остановить: красная СТОП на том же посту.</li>
+          <li>Перейти на двигатель 2: сначала СТОП на SB1, потом ПУСК на SB2.</li>
+          <li>Пока один работает, ПУСК другого ничего не делает. Так и задумано.</li>
+        </ol></div>
+        <div><b>Если что-то не так</b><ul>
+          <li>Опасность: ударить по SB0, всё отключится. Потом устранить причину, повернуть SB0, снова ПУСК.</li>
+          <li>Двигатель сам остановился: сработал FR этого двигателя. Дать остыть, выяснить причину, взвести FR, снова ПУСК.</li>
+          <li>Ничего не включается и KVR красный: проблема фаз в сети. Вызвать электрика.</li>
+          <li>После отключения света двигатели сами не запустятся. Нажать ПУСК заново.</li>
+        </ul></div>
+        <div><b>Выключение</b><ol>
+          <li>СТОП на работающем посту.</li>
+          <li>Выключить QF1 (рычаг вниз).</li>
+        </ol></div>
+      </div>
+    </div>
+    <div class="card">
+      <h2>Логика работы</h2>
+      <ol>
+        <li>QF1 подаёт 3~380 В на схему.</li>
+        <li>KVR следит за наличием, чередованием и перекосом фаз L1/L2/L3 после QF1. Силовой ток через KVR не идёт.</li>
+        <li>Катушка KM0 питается от L1–L2 (~380 В) через QF0, SB0 и разрешающий контакт KVR 11–14. Поэтому KM0 может включиться до появления 36 В.</li>
+        <li>KM0 подаёт 380 В на первичную обмотку T1.</li>
+        <li>T1 выдаёт 3~36 В. QF2 защищает вторичную цепь и раздаёт её на ветви M1 и M2.</li>
+        <li>Цепь управления ~36 В берётся с фаз a и b после QF2 через QF3.</li>
+        <li>ПУСК SB1 включает KM1, контакт KM1 13–14 параллельно ПУСК держит его после отпускания кнопки. Для M2 так же.</li>
+        <li>НЗ KM2 21–22 стоит в цепи KM1, НЗ KM1 21–22 в цепи KM2. Механическая блокировка BLK1 физически не даёт замкнуться обоим.</li>
+        <li>FR1/FR2 при срабатывании размыкают свои силовые полюса и контакт 95–96 в цепи катушки.</li>
+        <li>При пропадании питания KM1/KM2 отпадают, самоподхват снимается. После возврата напряжения нужен новый ПУСК.</li>
+      </ol>
+    </div>
+    <div class="card">
+      <h2>Обозначения</h2>
+      <div class="tbl-scroll"><table>
+        <tr><td class="code">QF1</td><td>Вводной автомат 3P, 380 В</td></tr>
+        <tr><td class="code">KVR</td><td>Реле контроля фаз (только контроль)</td></tr>
+        <tr><td class="code">KM0</td><td>Главный контактор, подаёт 380 В на T1, катушка ~380/400 В</td></tr>
+        <tr><td class="code">T1</td><td>Трансформатор 3×380 / 3×36 В</td></tr>
+        <tr><td class="code">QF2</td><td>Защита вторичной цепи 36 В, 3P</td></tr>
+        <tr><td class="code">FR1, FR2</td><td>Автоматы защиты двигателей с НЗ 95–96</td></tr>
+        <tr><td class="code">KM1, KM2</td><td>Контакторы двигателей, катушки ~36 В</td></tr>
+        <tr><td class="code">BLK1</td><td>Механическая блокировка KM1 ↔ KM2</td></tr>
+        <tr><td class="code">SB0</td><td>Аварийный стоп, НЗ, с фиксацией</td></tr>
+        <tr><td class="code">SB1, SB2</td><td>Кнопочные посты: ПУСК (НО), СТОП (НЗ)</td></tr>
+        <tr><td class="code">M1, M2</td><td>Двигатели 3~36 В</td></tr>
+        <tr><td class="code">QF0</td><td>Защита цепи катушки KM0, 2P <span class="tag">добавлено</span></td></tr>
+        <tr><td class="code">QF3</td><td>Защита цепи управления 36 В, 2P <span class="tag">добавлено</span></td></tr>
+        <tr><td class="code">PE</td><td>Защитное заземление: шкаф, T1, M1, M2</td></tr>
+      </table></div>
+    </div>
+    <div class="card">
+      <h2>Проверка логики</h2>
+      <div class="tbl-scroll"><table id="checks"><tr><th>№</th><th>Сценарий</th><th>Итог</th></tr></table></div>
+    </div>
+    <div class="card warn">
+      <h2>Важно</h2>
+      <ul>
+        <li>Номиналы не выбраны: мощность и ток M1/M2, мощность T1, токи QF1/QF2/QF0/QF3, уставки FR1/FR2, сечения проводов, уставки KVR. Нужны данные двигателей.</li>
+        <li>Двигатели должны быть рассчитаны на 3~36 В линейного напряжения.</li>
+        <li>Цепь управления 36 В питается от того же T1, что и двигатели. Проверить просадку при пуске, чтобы KM1/KM2 не дребезжали.</li>
+        <li>Решить режим 36 В: SELV или PELV, заземлять ли одну сторону цепи управления.</li>
+        <li>BLK1 подбирается только как штатный аксессуар к выбранной паре KM1/KM2.</li>
+        <li>Обязательно защитное заземление PE корпусов шкафа, T1, M1, M2.</li>
+        <li>Монтаж и наладку выполняет квалифицированный электрик по рабочему проекту.</li>
+      </ul>
+    </div>
+  </section>
+</div>
+
+<script>
+(() => {
+/* ---------- Model ---------- */
+const initial = () => ({ qf1: true, phasesOk: true, sb0: true, qf0: true, qf2: true, qf3: true,
+  fr1: true, fr2: true, km1: false, km2: false, start1: false, start2: false, stop1: false, stop2: false });
+
+function derive(s) {
+  const kvr = s.qf1 && s.phasesOk;
+  const km0 = s.qf1 && s.qf0 && s.sb0 && kvr;
+  const bus36 = km0 && s.qf2;
+  const c36 = bus36 && s.qf3;
+  return { kvr, km0, bus36, c36 };
+}
+// Settle contactor states; rnd decides which coil wins when both get a command in the same instant.
+function settle(s, rnd = Math.random) {
+  for (let i = 0; i < 4; i++) {
+    const { c36 } = derive(s);
+    const r1 = c36 && !s.stop1 && s.fr1 && !s.km2 && (s.start1 || s.km1);
+    const r2 = c36 && !s.stop2 && s.fr2 && !s.km1 && (s.start2 || s.km2);
+    let k1 = r1, k2 = r2;
+    if (r1 && r2) { if (rnd() < 0.5) k2 = false; else k1 = false; } // BLK1: only one can close
+    if (k1 === s.km1 && k2 === s.km2) break;
+    s.km1 = k1; s.km2 = k2;
+  }
+  if (s.km1 && s.km2) throw new Error('interlock violated');
+  return s;
+}
+const press = (s, keys) => { keys.forEach(k => s[k] = true); settle(s); keys.forEach(k => s[k] = false); return settle(s); };
+
+/* ---------- Scenario checks (the 13 required cases) ---------- */
+function runChecks() {
+  const cases = [];
+  const add = (t, f) => { let ok; try { ok = f(); } catch (e) { ok = false; } cases.push([t, ok]); };
+  add('QF1 выключен: ничего не работает', () => { const s = initial(); s.qf1 = false; press(s, ['start1']); const d = derive(s); return !d.km0 && !d.c36 && !s.km1 && !s.km2; });
+  add('QF1 включён, фазы в норме: KVR разрешает KM0', () => { const s = settle(initial()); const d = derive(s); return d.kvr && d.km0; });
+  add('Ошибка фаз: KM0 отключается, двигатель останавливается', () => { const s = press(initial(), ['start1']); s.phasesOk = false; settle(s); const d = derive(s); return !d.km0 && !s.km1; });
+  add('ПУСК M1: запускается только M1', () => { const s = press(initial(), ['start1']); return s.km1 && !s.km2; });
+  add('M1 работает: ПУСК M2 не включает M2', () => { const s = press(initial(), ['start1']); press(s, ['start2']); return s.km1 && !s.km2; });
+  add('СТОП M1: M1 отключается', () => { const s = press(initial(), ['start1']); press(s, ['stop1']); return !s.km1; });
+  add('После отключения KM1 можно запустить M2', () => { const s = press(initial(), ['start1']); press(s, ['stop1']); press(s, ['start2']); return !s.km1 && s.km2; });
+  add('M2 работает: ПУСК M1 не включает M1', () => { const s = press(initial(), ['start2']); press(s, ['start1']); return s.km2 && !s.km1; });
+  add('Сработал FR1: M1 отключается', () => { const s = press(initial(), ['start1']); s.fr1 = false; settle(s); press(s, ['start1']); return !s.km1; });
+  add('Сработал FR2: M2 отключается', () => { const s = press(initial(), ['start2']); s.fr2 = false; settle(s); press(s, ['start2']); return !s.km2; });
+  add('ПУСК1 и ПУСК2 одновременно (200 попыток): не более одного', () => { for (let i = 0; i < 200; i++) { const s = press(initial(), ['start1', 'start2']); if (s.km1 && s.km2) return false; if (!s.km1 && !s.km2) return false; } return true; });
+  add('Аварийный стоп SB0: KM0, T1, KM1, KM2 отключены', () => { const s = press(initial(), ['start2']); s.sb0 = false; settle(s); const d = derive(s); return !d.km0 && !d.c36 && !s.km1 && !s.km2; });
+  add('После возврата питания двигатель сам не запускается', () => { const s = press(initial(), ['start1']); s.qf1 = false; settle(s); s.qf1 = true; settle(s); return derive(s).km0 && !s.km1 && !s.km2; });
+  const tbl = document.getElementById('checks');
+  cases.forEach(([t, ok], i) => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td class="code">${i + 1}</td><td>${t}</td><td class="${ok ? 'pass' : 'fail'}">${ok ? 'PASS' : 'FAIL'}</td>`;
+    tbl.appendChild(tr);
+  });
+}
+
+/* ---------- Drawing helpers ---------- */
+const C = { L1: '#7b4a22', L2: '#1d1f22', L3: '#8e969f', a: '#d62828', b: '#1f5bd6', c: '#7d3fb8', PE: '#2f9e44', PEy: '#f2c40f' };
+const pts = p => p.map(q => q.join(',')).join(' ');
+const wire = (p, color, live) => `<polyline class="w ${live ? 'live' : 'dead'}" points="${pts(p)}" stroke="${color}"/>` + (live ? `<polyline class="w live flow" points="${pts(p)}"/>` : '');
+const pe = p => `<polyline class="w" points="${pts(p)}" stroke="${C.PE}"/><polyline points="${pts(p)}" fill="none" stroke="${C.PEy}" stroke-width="3.2" stroke-dasharray="7 7"/>`;
+const dot = (x, y) => `<circle cx="${x}" cy="${y}" r="4" fill="#17212c"/>`;
+const screw = (x, y) => `<circle cx="${x}" cy="${y}" r="6.5" fill="#dde1e5" stroke="#7f8993" stroke-width="1.2"/><path d="M${x - 3.5} ${y - 3.5} L${x + 3.5} ${y + 3.5}" stroke="#5c6670" stroke-width="1.4"/>`;
+const label = (x, y, name, subs = [], anchor = 'start') => `<text x="${x}" y="${y}" text-anchor="${anchor}" class="t-name">${name}</text>` + subs.map((t, i) => `<text x="${x}" y="${y + 16 + i * 14}" text-anchor="${anchor}" class="t-sub">${t}</text>`).join('');
+const term = (x, y, t) => `<text x="${x + 6}" y="${y}" class="t-term">${t}</text>`;
+const panel = (x, y, w, h, title) => `<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="12" fill="#eef3f8" stroke="#c5d3e2" stroke-width="1.5"/><rect x="${x}" y="${y}" width="${title.length * 9.6 + 34}" height="34" rx="12" fill="#dce6f1"/><text x="${x + 16}" y="${y + 24}" class="t-panel">${title}</text>`;
+
+function breaker(x0, y, n, on, act, terms) {
+  let g = `<g class="clickable" data-act="${act}"><rect class="hov" x="${x0 - 3}" y="${y - 3}" width="${n * 40 + 6}" height="136" rx="6" fill="none" stroke="none"/>`;
+  for (let i = 0; i < n; i++) {
+    const mx = x0 + i * 40;
+    g += `<rect x="${mx + 1}" y="${y}" width="38" height="130" rx="3" fill="#f6f7f8" stroke="#b5bcc4"/>
+      <rect x="${mx + 5}" y="${y + 26}" width="30" height="78" rx="2" fill="#eceef0"/>
+      <rect x="${mx + 12}" y="${y + 34}" width="16" height="7" rx="1" fill="${on ? '#2fb344' : '#e03131'}"/>` + screw(mx + 20, y + 12) + screw(mx + 20, y + 118);
+    if (terms) g += term(mx + 20, y - 4, terms[0][i]) + term(mx + 20, y + 140, terms[1][i]);
+  }
+  g += `<rect x="${x0 + 3}" y="${y + 58}" width="${n * 40 - 6}" height="16" rx="3" fill="#24272b"/>
+    <rect x="${x0 + 8}" y="${on ? y + 48 : y + 66}" width="${n * 40 - 16}" height="16" rx="3" fill="#3a3f45"/></g>`;
+  return g;
+}
+function contactor(cx, y, on, coilTxt) {
+  const x = cx - 64;
+  let g = `<rect x="${x}" y="${y}" width="128" height="130" rx="5" fill="#26292d"/>
+    <rect x="${x + 13}" y="${y + 2}" width="102" height="126" rx="3" fill="#f4f5f6" stroke="#b5bcc4"/>
+    <rect x="${cx - 32}" y="${y + 46}" width="64" height="32" rx="3" fill="#2b2e33"/>
+    <rect x="${cx - 26}" y="${y + 52}" width="15" height="20" fill="#3d4248"/><rect x="${cx - 7}" y="${y + 52}" width="15" height="20" fill="#3d4248"/><rect x="${cx + 12}" y="${y + 52}" width="15" height="20" fill="#3d4248"/>
+    <rect x="${cx - 12}" y="${y + 86}" width="24" height="9" rx="2" fill="${on ? '#2fb344' : '#9aa3ad'}"/>`;
+  [-40, 0, 40].forEach(d => { g += screw(cx + d, y + 12) + screw(cx + d, y + 118); });
+  g += term(cx - 40, y - 4, '1/L1') + term(cx, y - 4, '3/L2') + term(cx + 40, y - 4, '5/L3') + term(cx - 40, y + 141, '2/T1') + term(cx, y + 141, '4/T2') + term(cx + 40, y + 141, '6/T3');
+  g += `<circle cx="${x + 6}" cy="${y + 12}" r="4" fill="#dde1e5" stroke="#7f8993"/><circle cx="${x + 122}" cy="${y + 12}" r="4" fill="#dde1e5" stroke="#7f8993"/>`;
+  g += `<text x="${x + 6}" y="${y + 30}" text-anchor="middle" class="t-term" style="fill:#fff">A1</text><text x="${x + 122}" y="${y + 30}" text-anchor="middle" class="t-term" style="fill:#fff">A2</text>`;
+  return g;
+}
+function kvrDev(x, y, ok, powered) {
+  const led = powered ? (ok ? '#2fd158' : '#ef3b2d') : '#aab2ba';
+  let g = `<rect x="${x}" y="${y}" width="120" height="106" rx="4" fill="#f4f5f6" stroke="#b5bcc4"/><rect x="${x + 8}" y="${y + 24}" width="104" height="58" rx="3" fill="#ebedf0"/>`;
+  [30, 60, 90].forEach(d => { g += `<circle cx="${x + d}" cy="${y + 36}" r="5" fill="${led}" stroke="#5f6870" stroke-width=".8"/>`; });
+  g += `<circle cx="${x + 42}" cy="${y + 62}" r="9" fill="#26292d"/><circle cx="${x + 78}" cy="${y + 62}" r="9" fill="#26292d"/>`;
+  [25, 60, 95].forEach(d => { g += screw(x + d, y + 12); });
+  g += screw(x + 25, y + 94) + screw(x + 60, y + 94);
+  g += term(x + 25, y - 4, 'L1') + term(x + 60, y - 4, 'L2') + term(x + 95, y - 4, 'L3') + term(x + 25, y + 117, '11') + term(x + 60, y + 117, '14');
+  return g;
+}
+function transformer(x, y) {
+  let g = `<rect x="${x + 4}" y="${y + 24}" width="162" height="132" rx="4" fill="#9aa1a8" stroke="#6f7780"/>`;
+  for (let i = 0; i < 9; i++) g += `<line x1="${x + 6}" x2="${x + 164}" y1="${y + 30 + i * 15}" y2="${y + 30 + i * 15}" stroke="#868d95" stroke-width="1"/>`;
+  g += `<rect x="${x + 34}" y="${y + 40}" width="102" height="100" rx="14" fill="#efe9dc" stroke="#c9bfa8"/>
+    <line x1="${x + 85}" x2="${x + 85}" y1="${y + 44}" y2="${y + 136}" stroke="#cdc3ad" stroke-width="1.5"/>
+    <text x="${x + 60}" y="${y + 86}" text-anchor="middle" class="t-sub" style="font-weight:700">380 В</text><text x="${x + 60}" y="${y + 101}" text-anchor="middle" class="t-small">3~</text>
+    <text x="${x + 110}" y="${y + 86}" text-anchor="middle" class="t-sub" style="font-weight:700">36 В</text><text x="${x + 110}" y="${y + 101}" text-anchor="middle" class="t-small">3~</text>`;
+  [[x + 12, y + 32], [x + 158, y + 32], [x + 12, y + 148], [x + 158, y + 148]].forEach(([a, b]) => { g += `<circle cx="${a}" cy="${b}" r="5" fill="#c9a24a" stroke="#8a6d2a"/>`; });
+  g += `<rect x="${x + 25}" y="${y}" width="120" height="24" rx="3" fill="#f07c1f" stroke="#b9560d"/><rect x="${x + 25}" y="${y + 156}" width="120" height="24" rx="3" fill="#f07c1f" stroke="#b9560d"/>`;
+  [45, 85, 125].forEach(d => { g += screw(x + d, y + 12) + screw(x + d, y + 168); });
+  g += term(x + 45, y - 4, 'A') + term(x + 85, y - 4, 'B') + term(x + 125, y - 4, 'C') + term(x + 45, y + 192, 'a') + term(x + 85, y + 192, 'b') + term(x + 125, y + 192, 'c');
+  g += `<rect x="${x - 4}" y="${y + 176}" width="178" height="8" rx="2" fill="#7c848c"/>`;
+  return g;
+}
+function mpcb(cx, y, ok, act) {
+  const x = cx - 60;
+  let g = `<g class="clickable" data-act="${act}"><rect class="hov" x="${x - 3}" y="${y - 3}" width="126" height="126" rx="6" fill="none" stroke="none"/>
+    <rect x="${x}" y="${y}" width="120" height="120" rx="4" fill="#f4f5f6" stroke="#b5bcc4"/><rect x="${x + 108}" y="${y + 4}" width="10" height="112" fill="#2b2e33"/>
+    <rect x="${x + 6}" y="${y + 26}" width="100" height="70" rx="3" fill="#eceef0"/>
+    <circle cx="${x + 22}" cy="${y + 40}" r="7" fill="#fff" stroke="#9aa3ad"/>
+    <circle cx="${x + 22}" cy="${y + 72}" r="7" fill="#e03131"/>
+    <circle cx="${x + 90}" cy="${y + 80}" r="6" fill="#2563c9"/>
+    <circle cx="${x + 58}" cy="${y + 61}" r="16" fill="#25282c"/>
+    <rect x="${x + 55}" y="${y + 44}" width="6" height="22" rx="2" fill="#4a4f56" transform="rotate(${ok ? 0 : 50} ${x + 58} ${y + 61})"/>`;
+  [-40, 0, 40].forEach(d => { g += screw(cx + d, y + 12) + screw(cx + d, y + 108); });
+  if (!ok) g += `<rect x="${x + 64}" y="${y + 28}" width="38" height="14" rx="3" fill="#e03131"/><text x="${x + 83}" y="${y + 39}" text-anchor="middle" class="t-term" style="fill:#fff;font-weight:700">TRIP</text>`;
+  g += term(cx - 40, y - 4, '1') + term(cx, y - 4, '3') + term(cx + 40, y - 4, '5') + term(cx - 40, y + 131, '2') + term(cx, y + 131, '4') + term(cx + 40, y + 131, '6') + '</g>';
+  return g;
+}
+function motor(cx, y, running) {
+  let g = `<rect x="${cx - 80}" y="${y + 24}" width="160" height="76" rx="30" fill="#2563c9" stroke="#163f8f" stroke-width="1.5"/>`;
+  for (let i = 0; i < 7; i++) g += `<line x1="${cx - 52 + i * 15}" x2="${cx - 52 + i * 15}" y1="${y + 32}" y2="${y + 92}" stroke="#1d4ea6" stroke-width="3"/>`;
+  g += `<rect x="${cx - 88}" y="${y + 34}" width="12" height="56" rx="5" fill="#1e52b0"/>
+    <rect x="${cx + 80}" y="${y + 56}" width="28" height="12" rx="3" fill="#f2c40f" stroke="#b08c00"/>
+    <rect x="${cx - 60}" y="${y + 98}" width="120" height="12" rx="3" fill="#1e4fa8"/>
+    <rect x="${cx - 55}" y="${y}" width="110" height="26" rx="4" fill="#2f6fd6" stroke="#163f8f"/>`;
+  [-40, 0, 40].forEach(d => { g += screw(cx + d, y + 12); });
+  g += term(cx - 40, y - 4, 'U1') + term(cx, y - 4, 'V1') + term(cx + 40, y - 4, 'W1');
+  g += `<g class="${running ? 'spin' : ''}"><circle cx="${cx + 116}" cy="${y + 62}" r="10" fill="none" stroke="${running ? '#2fb344' : '#c4cbd2'}" stroke-width="3" stroke-dasharray="14 6"/></g>`;
+  return g;
+}
+function terminals(x, y, names) {
+  let g = '';
+  names.forEach((n, i) => {
+    const tx = x + i * 40;
+    g += `<rect x="${tx - 15}" y="${y}" width="30" height="30" rx="3" fill="${n === 'PE' ? '#4caf50' : '#b9bfc6'}" stroke="#7f8993"/>` + screw(tx, y + 15) + `<text x="${tx}" y="${y - 6}" text-anchor="middle" class="t-sub" style="font-weight:700">${n}</text>`;
+  });
+  return g;
+}
+// Horizontal contact between xa and xb on line y. Left half gets the incoming potential.
+function contact(xa, xb, y, color, liveIn, liveOut, closed, push) {
+  const p1 = xa + 12, p2 = xb - 12;
+  let g = wire([[xa, y], [p1, y]], color, liveIn) + wire([[p2, y], [xb, y]], color, liveOut);
+  const end = closed ? [p2 + 1, y] : [p2 - 2, y - 13];
+  g += `<line x1="${p1}" y1="${y}" x2="${end[0]}" y2="${end[1]}" stroke="#17212c" stroke-width="2.6" stroke-linecap="round"/><circle cx="${p1}" cy="${y}" r="2.5" fill="#17212c"/><circle cx="${p2}" cy="${y}" r="2.5" fill="#17212c"/>`;
+  if (push) { const mx = (p1 + p2) / 2, my = closed ? y : y - 7; g += `<line x1="${mx}" y1="${my}" x2="${mx}" y2="${y - 24}" stroke="#17212c" stroke-width="1.4" stroke-dasharray="3 2"/><line x1="${mx - 6}" y1="${y - 24}" x2="${mx + 6}" y2="${y - 24}" stroke="#17212c" stroke-width="2"/>`; }
+  return g;
+}
+function coil(xa, xb, y, on, cIn, cOut, liveIn, liveOut) {
+  let g = wire([[xa, y], [xa + 6, y]], cIn, liveIn) + wire([[xb - 6, y], [xb, y]], cOut, liveOut);
+  g += `<rect x="${xa + 4}" y="${y - 14}" width="${xb - xa - 8}" height="28" rx="5" fill="#cfd5db" stroke="${on ? '#2fb344' : '#6f7780'}" stroke-width="${on ? 3 : 1.4}"/>
+    <rect x="${xa + 12}" y="${y - 14}" width="${xb - xa - 24}" height="28" fill="#e7ebef"/>
+    <text x="${(xa + xb) / 2}" y="${y + 4}" text-anchor="middle" class="t-sub" style="font-weight:700">~</text>`;
+  g += term(xa + 4, y + 26, 'A1') + term(xb - 4, y + 26, 'A2');
+  return g;
+}
+const btnIcon = (cx, y, col, act, pressed) => `<g class="clickable" data-act="${act}"><rect class="hov" x="${cx - 21}" y="${y - 3}" width="42" height="42" rx="7" fill="none" stroke="none"/><rect x="${cx - 18}" y="${y}" width="36" height="36" rx="6" fill="#c9ced4" stroke="#8a939c"/><circle cx="${cx}" cy="${y + 18}" r="12.5" fill="#33373c"/><circle cx="${cx}" cy="${y + 18}" r="${pressed ? 8 : 10}" fill="${col}"/></g>`;
+const estopIcon = (cx, y, released, act) => `<g class="clickable" data-act="${act}"><rect class="hov" x="${cx - 25}" y="${y - 3}" width="50" height="50" rx="7" fill="none" stroke="none"/><rect x="${cx - 22}" y="${y}" width="44" height="44" rx="6" fill="#f2c40f" stroke="#a88700"/><circle cx="${cx}" cy="${y + 22}" r="${released ? 17 : 14}" fill="#d62828" stroke="#8b1414"/><path d="M${cx - 8} ${y + 16} a9 9 0 0 1 16 0" fill="none" stroke="#fff" stroke-width="1.8"/></g>`;
+const miniMpcb = (cx, y, ok) => `<rect x="${cx - 16}" y="${y + 2}" width="32" height="34" rx="3" fill="#f4f5f6" stroke="#9aa3ad"/><circle cx="${cx}" cy="${y + 20}" r="8" fill="#25282c"/><rect x="${cx - 1.5}" y="${y + 12}" width="3" height="9" fill="#5a6068" transform="rotate(${ok ? 0 : 50} ${cx} ${y + 20})"/><circle cx="${cx - 10}" cy="${y + 30}" r="3" fill="#e03131"/>`;
+const miniKm = (cx, y, on) => `<rect x="${cx - 18}" y="${y + 2}" width="36" height="34" rx="3" fill="#26292d"/><rect x="${cx - 13}" y="${y + 4}" width="26" height="30" fill="#f4f5f6"/><rect x="${cx - 9}" y="${y + 13}" width="18" height="9" fill="#2b2e33"/><rect x="${cx - 5}" y="${y + 25}" width="10" height="4" fill="${on ? '#2fb344' : '#9aa3ad'}"/>`;
+const miniKvr = (cx, y, ok) => `<rect x="${cx - 18}" y="${y + 2}" width="36" height="34" rx="3" fill="#f4f5f6" stroke="#9aa3ad"/>${[-9, 0, 9].map(d => `<circle cx="${cx + d}" cy="${y + 12}" r="3" fill="${ok ? '#2fd158' : '#ef3b2d'}"/>`).join('')}<circle cx="${cx - 6}" cy="${y + 26}" r="4" fill="#26292d"/><circle cx="${cx + 7}" cy="${y + 26}" r="4" fill="#26292d"/>`;
+const tag = (cx, y, name, sub) => `<text x="${cx}" y="${y}" text-anchor="middle" class="t-sub" style="font-weight:700;fill:#17212c">${name}</text>` + (sub ? `<text x="${cx}" y="${y + 13}" text-anchor="middle" class="t-small">${sub}</text>` : '');
+
+/* ---------- Sheet ---------- */
+function render(s) {
+  const d = derive(s);
+  let o = '';
+  o += panel(16, 92, 600, 740, 'Силовая часть 380 В');
+  o += panel(632, 92, 952, 740, 'Силовая часть 36 В');
+  o += panel(16, 878, 600, 412, 'Цепь катушки KM0 · ~380 В');
+  o += panel(632, 878, 952, 412, 'Цепь управления · ~36 В');
+
+  /* --- 380 V --- */
+  const sup = true, aQ1 = s.qf1;
+  o += terminals(60, 150, ['PE', 'L1', 'L2', 'L3']);
+  o += label(204, 162, 'Ввод', ['3~380 В, 50 Гц']);
+  const ph = [[100, C.L1], [140, C.L2], [180, C.L3]];
+  ph.forEach(([x, c]) => { o += wire([[x, 180], [x, 222]], c, sup); });
+  ph.forEach(([x, c]) => { o += wire([[x, 328], [x, 422]], c, aQ1); });
+  // KVR taps
+  o += wire([[100, 376], [465, 376], [465, 397]], C.L1, aQ1) + wire([[140, 366], [500, 366], [500, 397]], C.L2, aQ1) + wire([[180, 356], [535, 356], [535, 397]], C.L3, aQ1);
+  o += dot(100, 376) + dot(140, 366) + dot(180, 356);
+  // KM0 -> T1
+  o += wire([[100, 528], [100, 562], [345, 562], [345, 587]], C.L1, d.km0) + wire([[140, 528], [140, 552], [385, 552], [385, 587]], C.L2, d.km0) + wire([[180, 528], [180, 542], [425, 542], [425, 587]], C.L3, d.km0);
+  // T1 secondary -> QF2
+  o += wire([[425, 743], [425, 775], [660, 775], [660, 140], [820, 140], [820, 197]], C.c, d.km0);
+  o += wire([[385, 743], [385, 785], [670, 785], [670, 150], [780, 150], [780, 197]], C.b, d.km0);
+  o += wire([[345, 743], [345, 795], [680, 795], [680, 160], [740, 160], [740, 197]], C.a, d.km0);
+  // KVR output stubs
+  o += `<line x1="465" y1="478" x2="465" y2="500" stroke="#6f7780" stroke-width="2" stroke-dasharray="4 3"/><line x1="500" y1="478" x2="500" y2="500" stroke="#6f7780" stroke-width="2" stroke-dasharray="4 3"/>`;
+  // PE
+  o += pe([[60, 180], [60, 852]]) + pe([[300, 750], [290, 750], [290, 852]]);
+
+  o += breaker(80, 210, 3, s.qf1, 'qf1', [['1', '3', '5'], ['2', '4', '6']]);
+  o += label(212, 250, 'QF1', ['Вводной автомат', '3P, 380 В']);
+  o += contactor(140, 410, d.km0);
+  o += label(214, 448, 'KM0', ['Главный контактор', 'подаёт 380 В на T1', 'катушка ~380 В']);
+  o += kvrDev(440, 385, s.phasesOk, s.qf1);
+  o += label(440, 520, 'KVR', ['Реле контроля фаз', '11–14 → цепь KM0']);
+  o += transformer(300, 575);
+  o += label(484, 640, 'T1', ['Трансформатор', '3×380 / 3×36 В']);
+
+  /* --- 36 V power --- */
+  o += wire([[740, 303], [740, 345], [1340, 345]], C.a, d.bus36) + wire([[780, 303], [780, 335], [1380, 335]], C.b, d.bus36) + wire([[820, 303], [820, 325], [1420, 325]], C.c, d.bus36);
+  const branches = [[1000, s.fr1, s.km1, 'fr1', 'end'], [1380, s.fr2, s.km2, 'fr2', 'start']];
+  branches.forEach(([cx, fr, km], i) => {
+    const xs = [cx - 40, cx, cx + 40], ys = [345, 335, 325], cols = [C.a, C.b, C.c];
+    xs.forEach((x, k) => {
+      o += wire([[x, ys[k]], [x, 397]], cols[k], d.bus36) + dot(x, ys[k]);
+      o += wire([[x, 493], [x, 552]], cols[k], d.bus36 && fr);
+      o += wire([[x, 658], [x, 712]], cols[k], d.bus36 && fr && km);
+    });
+    o += pe([[cx - 70, 806], [cx - 90, 806], [cx - 90, 852]]);
+  });
+  o += breaker(720, 185, 3, s.qf2, 'qf2', [['a', 'b', 'c'], ['', '', '']]);
+  o += label(852, 225, 'QF2', ['Защита вторичной', 'цепи 36 В, 3P']);
+  branches.forEach(([cx, fr, km, act, side], i) => {
+    const n = i + 1, lx = side === 'end' ? cx - 76 : cx + 76;
+    o += mpcb(cx, 385, fr, act);
+    o += label(lx, 425, `FR${n}`, ['Автомат защиты', `двигателя ${n}`, 'доп. контакт 95–96'], side);
+    o += contactor(cx, 540, km);
+    o += label(lx, 585, `KM${n}`, [`Контактор M${n}`, 'катушка ~36 В'], side);
+    o += motor(cx, 700, d.bus36 && fr && km);
+    o += label(cx - 96, 748, `M${n}`, ['Двигатель 3~36 В'], 'end');
+  });
+  // Mechanical interlock BLK1
+  o += `<line x1="1066" y1="605" x2="1314" y2="605" stroke="#17212c" stroke-width="2" stroke-dasharray="8 5"/><path d="M1066 605 l10 -6 v12 z M1314 605 l-10 -6 v12 z" fill="#17212c"/>`;
+  o += tag(1190, 592, 'BLK1 · механическая блокировка', '') + `<text x="1190" y="626" text-anchor="middle" class="t-small">KM1 и KM2 не могут замкнуться вместе</text>`;
+  // PE bar
+  o += `<rect x="40" y="846" width="1520" height="12" rx="3" fill="#c98b3d" stroke="#8a5a1c"/>`;
+  for (let x = 90; x < 1560; x += 120) o += `<circle cx="${x}" cy="852" r="3" fill="#7b5420"/>`;
+  o += `<text x="1556" y="840" text-anchor="end" class="t-sub" style="font-weight:700">PE · шина заземления: шкаф, дверь, T1, M1, M2</text>`;
+
+  /* --- KM0 coil circuit, 380 V --- */
+  const q0 = s.qf1 && s.qf0, n1 = q0 && s.sb0, n2 = n1 && d.kvr;
+  o += wire([[100, 922], [100, 957]], C.L2, s.qf1) + wire([[140, 922], [140, 957]], C.L1, s.qf1);
+  o += `<text x="92" y="930" text-anchor="end" class="t-sub" style="font-weight:700">L2</text><text x="148" y="930" class="t-sub" style="font-weight:700">L1</text><text x="160" y="944" class="t-small">после QF1</text>`;
+  o += breaker(80, 945, 2, s.qf0, 'qf0');
+  o += label(170, 990, 'QF0', ['2P, защита цепи KM0']);
+  o += wire([[140, 1033], [140, 1160], [200, 1160]], C.L1, q0);
+  o += contact(200, 252, 1160, C.L1, q0, n1, s.sb0, true);
+  o += wire([[252, 1160], [320, 1160]], C.L1, n1);
+  o += contact(320, 372, 1160, C.L1, n1, n2, d.kvr, false);
+  o += wire([[372, 1160], [440, 1160]], C.L1, n2);
+  o += coil(440, 520, 1160, d.km0, C.L1, C.L2, n2, q0);
+  o += wire([[520, 1160], [570, 1160], [570, 1265], [100, 1265], [100, 1033]], C.L2, q0);
+  o += estopIcon(226, 1094, s.sb0, 'sb0') + tag(226, 1070, 'SB0', 'аварийный стоп, НЗ');
+  o += miniKvr(346, 1100, d.kvr) + tag(346, 1070, 'KVR 11–14', 'разрешение, НО');
+  o += tag(480, 1110, 'KM0', 'катушка ~380 В');
+  o += `<text x="330" y="1240" text-anchor="middle" class="t-small">Катушка KM0 питается от 380 В, а не от T1: иначе KM0 не смог бы включиться.</text>`;
+
+  /* --- 36 V control --- */
+  o += wire([[690, 922], [690, 957]], C.b, d.bus36) + wire([[730, 922], [730, 957]], C.a, d.bus36);
+  o += `<text x="682" y="930" text-anchor="end" class="t-sub" style="font-weight:700">b</text><text x="738" y="930" class="t-sub" style="font-weight:700">a</text><text x="750" y="944" class="t-small">~36 В после QF2</text>`;
+  o += breaker(670, 945, 2, s.qf3, 'qf3');
+  o += label(762, 985, 'QF3', ['2P, защита цепи управления']);
+  o += wire([[730, 1033], [730, 1050], [1565, 1050]], C.a, d.c36);
+  o += wire([[690, 1033], [690, 1265], [1565, 1265]], C.b, d.c36);
+  [[790, 1], [1180, 2]].forEach(([x0, n]) => {
+    const other = n === 1 ? 2 : 1;
+    const stopP = s['stop' + n], startP = s['start' + n], fr = s['fr' + n], km = s['km' + n], kmo = s['km' + other];
+    const a0 = d.c36, a1 = a0 && !stopP, a2 = a1 && fr, a3 = a2 && !kmo, a4 = a3 && (startP || km);
+    o += `<text x="${x0}" y="1032" class="t-sub" style="font-weight:700;fill:#15345a">Двигатель M${n} · пост SB${n}</text>`;
+    o += wire([[x0, 1050], [x0, 1160], [x0 + 20, 1160]], C.a, a0) + dot(x0, 1050);
+    o += contact(x0 + 20, x0 + 60, 1160, C.a, a0, a1, !stopP, true);
+    o += wire([[x0 + 60, 1160], [x0 + 90, 1160]], C.a, a1);
+    o += contact(x0 + 90, x0 + 130, 1160, C.a, a1, a2, fr, false);
+    o += wire([[x0 + 130, 1160], [x0 + 160, 1160]], C.a, a2);
+    o += contact(x0 + 160, x0 + 200, 1160, C.a, a2, a3, !kmo, false);
+    o += wire([[x0 + 200, 1160], [x0 + 250, 1160]], C.a, a3);
+    o += contact(x0 + 250, x0 + 290, 1160, C.a, a3, a4, startP, true);
+    o += wire([[x0 + 290, 1160], [x0 + 325, 1160]], C.a, a4);
+    o += wire([[x0 + 230, 1160], [x0 + 230, 1215], [x0 + 250, 1215]], C.a, a3);
+    o += contact(x0 + 250, x0 + 290, 1215, C.a, a3, a4, km, false);
+    o += wire([[x0 + 290, 1215], [x0 + 310, 1215], [x0 + 310, 1160]], C.a, a4);
+    o += dot(x0 + 230, 1160) + dot(x0 + 310, 1160);
+    o += coil(x0 + 325, x0 + 375, 1160, km, C.a, C.b, a4, d.c36);
+    o += wire([[x0 + 375, 1160], [x0 + 385, 1160], [x0 + 385, 1265]], C.b, d.c36);
+    if (n === 1) o += dot(x0 + 385, 1265);
+    o += btnIcon(x0 + 40, 1092, '#d62828', 'stop' + n, stopP) + tag(x0 + 40, 1068, `SB${n} СТОП`, 'НЗ');
+    o += miniMpcb(x0 + 110, 1092, fr) + tag(x0 + 110, 1068, `FR${n} 95–96`, 'НЗ');
+    o += miniKm(x0 + 180, 1092, kmo) + tag(x0 + 180, 1068, `KM${other} 21–22`, 'НЗ, блокировка');
+    o += btnIcon(x0 + 270, 1092, '#2fb344', 'start' + n, startP) + tag(x0 + 270, 1068, `SB${n} ПУСК`, 'НО');
+    o += tag(x0 + 350, 1110, `KM${n}`, 'катушка ~36 В');
+    o += tag(x0 + 270, 1245, `KM${n} 13–14`, 'НО, самоподхват');
+  });
+
+  const svg = `<svg id="svg" class="${document.getElementById('lit').checked ? 'dimming' : 'nolit'}" viewBox="0 84 1600 1214" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Наглядная схема: силовая часть 380 В и 36 В, цепь KM0, цепь управления двигателями">${o}</svg>`;
+  document.getElementById('sheet').innerHTML = svg;
+  if (!document.getElementById('lit').checked) document.querySelectorAll('#svg .flow').forEach(e => e.remove());
+}
+
+/* ---------- UI ---------- */
+let S = settle(initial());
+const msg = document.getElementById('msg');
+function chips() {
+  const d = derive(S);
+  const c = (on, t1, t0, bad) => `<span class="chip ${on ? 'on' : (bad ? 'bad' : 'off')}">${on ? t1 : t0}</span>`;
+  document.getElementById('status').innerHTML =
+    c(S.qf1, 'QF1 включён', 'QF1 выключен', true) + c(d.kvr, 'KVR: фазы в норме', S.qf1 ? 'KVR: авария фаз' : 'KVR без питания', S.qf1) +
+    c(d.km0, 'KM0 включён · T1 под напряжением', 'KM0 отключён · 36 В нет', true) + c(d.c36, 'Управление 36 В есть', 'Управления 36 В нет', false) +
+    c(S.km1, 'M1 работает', 'M1 стоит', !S.fr1) + c(S.km2, 'M2 работает', 'M2 стоит', !S.fr2);
+  const set = (id, pressed, text) => { const b = document.getElementById(id); b.setAttribute('aria-pressed', String(pressed)); if (text) b.textContent = text; };
+  set('b-qf1', !S.qf1, S.qf1 ? 'QF1 выключить' : 'QF1 включить');
+  set('b-ph', !S.phasesOk, S.phasesOk ? 'Авария фаз' : 'Фазы восстановить');
+  set('b-sb0', !S.sb0, S.sb0 ? 'SB0 нажать' : 'SB0 сбросить');
+  set('b-fr1', !S.fr1, S.fr1 ? 'FR1 сработал' : 'FR1 взвести');
+  set('b-fr2', !S.fr2, S.fr2 ? 'FR2 сработал' : 'FR2 взвести');
+  set('b-qf2', !S.qf2, S.qf2 ? 'QF2 выключить' : 'QF2 включить');
+  set('b-qf0', !S.qf0, S.qf0 ? 'QF0 выключить' : 'QF0 включить');
+  set('b-qf3', !S.qf3, S.qf3 ? 'QF3 выключить' : 'QF3 включить');
+}
+function why(n) {
+  const d = derive(S), o = n === 1 ? 2 : 1;
+  if (!d.c36) return d.km0 ? 'нет 36 В в цепи управления (выключен QF2 или QF3)' : 'KM0 отключён, на T1 нет 380 В';
+  if (!S['fr' + n]) return `FR${n} сработал, контакт 95–96 разомкнут`;
+  if (S['km' + o]) return `работает M${o}: НЗ контакт KM${o} 21–22 разомкнут в цепи KM${n}`;
+  return '';
+}
+const show = () => { render(S); chips(); };
+let busy = false;
+function pulse(keys, after) {
+  if (busy) return; busy = true;
+  keys.forEach(k => S[k] = true); settle(S); show();
+  setTimeout(() => { keys.forEach(k => S[k] = false); settle(S); show(); after(); busy = false; }, 380);
+}
+function act(a) {
+  if (['start1', 'start2'].includes(a)) {
+    const n = +a.slice(-1), was = S['km' + n];
+    pulse([a], () => {
+      const r = why(n);
+      msg.innerHTML = S['km' + n] ? (was ? `<b>KM${n}</b> уже включён, M${n} работает.` : `<b>ПУСК SB${n}:</b> KM${n} включился и держится через свой контакт 13–14. M${n} работает.`) : `<b>ПУСК SB${n}:</b> KM${n} не включился, ${r}.`;
+    });
+  } else if (['stop1', 'stop2'].includes(a)) {
+    const n = +a.slice(-1);
+    pulse([a], () => { msg.innerHTML = `<b>СТОП SB${n}:</b> цепь катушки KM${n} разорвана, самоподхват снят. M${n} стоит.`; });
+  } else if (a === 'both') {
+    if (S.km1 || S.km2) { msg.innerHTML = 'Сначала остановите работающий двигатель, затем проверьте одновременный пуск.'; return; }
+    pulse(['start1', 'start2'], () => {
+      const w = S.km1 ? 1 : S.km2 ? 2 : 0;
+      msg.innerHTML = w ? `<b>ПУСК1 + ПУСК2:</b> обе катушки получили команду, BLK1 пропустил только KM${w}. Вторая цепь сразу разорвана НЗ контактом KM${w} 21–22. Работает только M${w}.` : `<b>ПУСК1 + ПУСК2:</b> ничего не включилось, ${why(1)}.`;
+    });
+  } else {
+    const map = { qf1: 'qf1', phases: 'phasesOk', sb0: 'sb0', fr1: 'fr1', fr2: 'fr2', qf2: 'qf2', qf0: 'qf0', qf3: 'qf3' };
+    if (a === 'reset') { S = settle(initial()); msg.innerHTML = 'Исходное состояние: QF1 включён, фазы в норме, KM0 включён, двигатели стоят.'; show(); return; }
+    const k = map[a]; if (!k) return;
+    const m1 = S.km1, m2 = S.km2;
+    S[k] = !S[k]; settle(S); show();
+    const stopped = [m1 && !S.km1 ? 'M1' : '', m2 && !S.km2 ? 'M2' : ''].filter(Boolean).join(' и ');
+    const tail = stopped ? ` ${stopped} остановлен${stopped.includes('и') ? 'ы' : ''}, самоподхват снят.` : '';
+    const d = derive(S);
+    const texts = {
+      qf1: S.qf1 ? 'QF1 включён. KVR проверил фазы, KM0 включился, T1 под напряжением. Двигатели сами не запускаются.' : 'QF1 выключен: вся схема обесточена.',
+      phasesOk: S.phasesOk ? 'Фазы в норме: KVR замкнул 11–14, KM0 включился. Двигатели ждут нового ПУСК.' : 'Авария фаз: KVR разомкнул 11–14, KM0 отпал, T1 обесточен.',
+      sb0: S.sb0 ? 'SB0 сброшен: KM0 снова включён, T1 под напряжением. Двигатели ждут нового ПУСК.' : 'SB0 нажат: цепь KM0 разорвана, T1 и все цепи 36 В обесточены.',
+      fr1: S.fr1 ? 'FR1 взведён. M1 можно запускать кнопкой ПУСК.' : 'FR1 сработал: разомкнул силовые полюса и контакт 95–96.',
+      fr2: S.fr2 ? 'FR2 взведён. M2 можно запускать кнопкой ПУСК.' : 'FR2 сработал: разомкнул силовые полюса и контакт 95–96.',
+      qf2: S.qf2 ? 'QF2 включён: 36 В подано на ветви и цепь управления.' : 'QF2 выключен: ветви двигателей и цепь управления без 36 В.',
+      qf0: S.qf0 ? 'QF0 включён: катушка KM0 снова под напряжением.' : 'QF0 выключен: катушка KM0 обесточена, T1 отключён.',
+      qf3: S.qf3 ? 'QF3 включён: цепь управления 36 В под напряжением.' : 'QF3 выключен: катушки KM1/KM2 обесточены.'
+    };
+    msg.innerHTML = `<b>${texts[k]}</b>${tail}`;
+    void d;
+  }
+}
+document.addEventListener('click', e => {
+  const t = e.target.closest('[data-act]');
+  if (t) act(t.getAttribute('data-act'));
+});
+document.getElementById('lit').addEventListener('change', show);
+runChecks();
+show();
+msg.innerHTML = 'Исходное состояние: QF1 включён, фазы в норме, KM0 включён, двигатели стоят. Нажмите ПУСК на посту.';
+})();
+</script>
+
+</html>
